@@ -1,0 +1,219 @@
+openapi: 3.0.3
+info:
+  title: URL Shortener API
+  description: A service to shorten URLs and track click statistics.
+  version: 1.0.0
+servers:
+  - url: https://your-domain.com
+    description: Production server
+paths:
+  /short:
+    post:
+      summary: Shorten a URL
+      description: Takes a long URL and returns a shortened version.
+      security:
+        - google_auth:
+            - 'https://www.googleapis.com/auth/userinfo.email'
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                url:
+                  type: string
+                  format: uri
+                  example: https://www.example.com/very/long/url/to/shorten
+                campaign:
+                  type: string
+                  example: summer-sale
+      responses:
+        '201':
+          description: URL shortened successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  short_url:
+                    type: string
+                    format: uri
+                    example: https://your-domain.com/tylks
+        '400':
+          description: Invalid URL supplied.
+  '/{shortCode}':
+    get:
+      summary: Redirect to the original URL
+      description: Redirects the user to the original long URL.
+      parameters:
+        - name: shortCode
+          in: path
+          required: true
+          description: The short code for the URL.
+          schema:
+            type: string
+            example: tylks
+      responses:
+        '302':
+          description: Redirects to the original URL.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: The original URL.
+        '404':
+          description: Short code not found.
+  '/{shortCode}/info':
+    get:
+      summary: Get URL statistics
+      description: Shows statistics for a shortened URL, such as click timestamps.
+      security:
+        - google_auth:
+            - 'https://www.googleapis.com/auth/userinfo.email'
+        - ApiKeyAuth: []
+      parameters:
+        - name: shortCode
+          in: path
+          required: true
+          description: The short code for the URL.
+          schema:
+            type: string
+            example: tylks
+      responses:
+        '200':
+          description: Statistics retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  original_url:
+                    type: string
+                    format: uri
+                  created_at:
+                    type: string
+                    format: date-time
+                  clicks:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        timestamp:
+                          type: string
+                          format: date-time
+                        ip_address:
+                          type: string
+        '404':
+          description: Short code not found.
+  '/{shortCode}/report':
+    post:
+      summary: Report a URL
+      description: Allows a user to report a URL and provide an explanation.
+      security:
+        - google_auth:
+            - 'https://www.googleapis.com/auth/userinfo.email'
+      parameters:
+        - name: shortCode
+          in: path
+          required: true
+          description: The short code for the URL.
+          schema:
+            type: string
+            example: tylks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                explanation:
+                  type: string
+                  example: This URL leads to a phishing site.
+      responses:
+        '200':
+          description: Report submitted successfully.
+        '404':
+          description: Short code not found.
+  /list/short:
+    get:
+      summary: List all shortened URLs
+      description: Retrieves a list of all shortened URLs and their original counterparts.
+      security:
+        - google_auth:
+            - 'https://www.googleapis.com/auth/userinfo.email'
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: A list of shortened URLs.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    short_url:
+                      type: string
+                      format: uri
+                    original_url:
+                      type: string
+                      format: uri
+  /list/campaign:
+    get:
+      summary: List all campaigns
+      description: Retrieves a list of all campaigns.
+      security:
+        - google_auth:
+            - 'https://www.googleapis.com/auth/userinfo.email'
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: A list of campaigns.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    created_at:
+                      type: string
+                      format: date-time
+  /key/{path*}:
+    parameters:
+      - name: path
+        in: path
+        required: true
+        schema:
+          type: string
+    servers:
+      - url: https://your-domain.com/key
+        description: API Key access
+    options:
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Proxied to the corresponding non-key path.
+components:
+  securitySchemes:
+    google_auth:
+      type: oauth2
+      description: This API uses OAuth 2 with the authorization code grant flow. [3]
+      flows:
+        authorizationCode:
+          authorizationUrl: https://accounts.google.com/o/oauth2/v2/auth
+          tokenUrl: https://oauth2.googleapis.com/token
+          scopes:
+            'https://www.googleapis.com/auth/userinfo.email': Grants access to the user's email address.
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+      description: API Key for programmatic access. [1]
