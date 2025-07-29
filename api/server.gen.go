@@ -39,9 +39,6 @@ type PostShortCodeReportJSONRequestBody PostShortCodeReportJSONBody
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-
-	// (OPTIONS /key/{path*})
-	OptionsKeyPath(ctx echo.Context, path string) error
 	// List all campaigns
 	// (GET /list/campaign)
 	GetListCampaign(ctx echo.Context) error
@@ -65,24 +62,6 @@ type ServerInterface interface {
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
-}
-
-// OptionsKeyPath converts echo context to params.
-func (w *ServerInterfaceWrapper) OptionsKeyPath(ctx echo.Context) error {
-	var err error
-	// ------------- Path parameter "path" -------------
-	var path string
-
-	err = runtime.BindStyledParameterWithOptions("simple", "path", ctx.Param("path"), &path, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter path: %s", err))
-	}
-
-	ctx.Set(ApiKeyAuthScopes, []string{})
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.OptionsKeyPath(ctx, path)
-	return err
 }
 
 // GetListCampaign converts echo context to params.
@@ -206,7 +185,6 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
-	router.OPTIONS(baseURL+"/key/:path", wrapper.OptionsKeyPath)
 	router.GET(baseURL+"/list/campaign", wrapper.GetListCampaign)
 	router.GET(baseURL+"/list/short", wrapper.GetListShort)
 	router.POST(baseURL+"/short", wrapper.PostShort)
@@ -214,22 +192,6 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.GET(baseURL+"/:shortCode/info", wrapper.GetShortCodeInfo)
 	router.POST(baseURL+"/:shortCode/report", wrapper.PostShortCodeReport)
 
-}
-
-type OptionsKeyPathRequestObject struct {
-	Path string `json:"path"`
-}
-
-type OptionsKeyPathResponseObject interface {
-	VisitOptionsKeyPathResponse(w http.ResponseWriter) error
-}
-
-type OptionsKeyPath200Response struct {
-}
-
-func (response OptionsKeyPath200Response) VisitOptionsKeyPathResponse(w http.ResponseWriter) error {
-	w.WriteHeader(200)
-	return nil
 }
 
 type GetListCampaignRequestObject struct {
@@ -386,9 +348,6 @@ func (response PostShortCodeReport404Response) VisitPostShortCodeReportResponse(
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
-
-	// (OPTIONS /key/{path*})
-	OptionsKeyPath(ctx context.Context, request OptionsKeyPathRequestObject) (OptionsKeyPathResponseObject, error)
 	// List all campaigns
 	// (GET /list/campaign)
 	GetListCampaign(ctx context.Context, request GetListCampaignRequestObject) (GetListCampaignResponseObject, error)
@@ -419,31 +378,6 @@ func NewStrictHandler(ssi StrictServerInterface, middlewares []StrictMiddlewareF
 type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
-}
-
-// OptionsKeyPath operation middleware
-func (sh *strictHandler) OptionsKeyPath(ctx echo.Context, path string) error {
-	var request OptionsKeyPathRequestObject
-
-	request.Path = path
-
-	handler := func(ctx echo.Context, request interface{}) (interface{}, error) {
-		return sh.ssi.OptionsKeyPath(ctx.Request().Context(), request.(OptionsKeyPathRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "OptionsKeyPath")
-	}
-
-	response, err := handler(ctx, request)
-
-	if err != nil {
-		return err
-	} else if validResponse, ok := response.(OptionsKeyPathResponseObject); ok {
-		return validResponse.VisitOptionsKeyPathResponse(ctx.Response())
-	} else if response != nil {
-		return fmt.Errorf("unexpected response type: %T", response)
-	}
-	return nil
 }
 
 // GetListCampaign operation middleware

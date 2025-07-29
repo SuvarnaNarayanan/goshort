@@ -1,8 +1,5 @@
 # goshort
-Goshort is a URL link shortener with advanced features like click statistics while being GDPR compliant. 
-
-
-I am writing a URL shortening service that lets me to shorten and track click statistics. Can you write me an openapi 3.0 spec so I could autogenerate server stubs from the api specification? 
+Goshort is a URL link shortener with advanced features like click statistics while being GDPR compliant.
 
 # Requirements 
 
@@ -21,11 +18,19 @@ GET {domain}/list/campaign --> All the campaigns.
 
 --- To be used programmatically by a power user ---
 
-All the API's mentioned above can also be used with an API key created by the user. 
+All the API's mentioned above can also be used with an API key created by the user. If API key is present then authenticate with it.
 
-so {domain}/key/* 
+so {domain}/* 
 
 where * can be any of the above url paths. The key must be included in the header. 
+
+# Defining URLs and generating server stubs
+
+- We use oapi-codegen tool to generate server stubs to bring joy back to programming.
+- Define your new routes in the `goshort-api.yaml` file
+- Regenerate server stubs
+  - cd into `tools`
+  - Run `go generate`
 
 # Approach
 

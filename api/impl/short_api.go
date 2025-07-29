@@ -24,8 +24,12 @@ func (ShortApiImpl) PostShort(ctx context.Context, request api.PostShortRequestO
 }
 
 func (ShortApiImpl) GetShortCode(ctx context.Context, request api.GetShortCodeRequestObject) (api.GetShortCodeResponseObject, error) {
-	//TODO implement me
-	panic("implement me")
+
+	return api.GetShortCode302Response{
+		Headers: api.GetShortCode302ResponseHeaders{
+			Location: "https://google.com",
+		},
+	}, nil
 }
 
 func (ShortApiImpl) GetShortCodeInfo(ctx context.Context, request api.GetShortCodeInfoRequestObject) (api.GetShortCodeInfoResponseObject, error) {
