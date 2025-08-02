@@ -3,9 +3,14 @@ package impl
 import (
 	"golang.org/x/net/context"
 	"goshort/m/v2/api"
-)
+	"gorm.io/gorm"
+	"github.com/go-redis/redis/v8"
+)	
 
-type ShortApiImpl struct{}
+type ShortApiImpl struct{
+	db  *gorm.DB
+	redis  *redis.Client
+}
 
 func (ShortApiImpl) GetListCampaign(ctx context.Context, request api.GetListCampaignRequestObject) (api.
 GetListCampaignResponseObject, error) {
